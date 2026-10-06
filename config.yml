@@ -1,0 +1,74 @@
+# ───────────────────────────────────────────────────────────────
+# 主页上所有文案都在这里。改完运行  python scripts/build.py
+# （推到 GitHub 后 Actions 也会自动跑：改了本文件立即跑一次，之后每天跑一次）
+# ───────────────────────────────────────────────────────────────
+
+profile:
+  login: Master-Norna            # GitHub 用户名，「墨痕」从这里取提交记录
+
+fonts:                           # 构建时从 github.com/google/fonts 下载，访客不需要装字体
+  dir: fonts
+  serif: ofl/notoserifsc/NotoSerifSC[wght].ttf    # 宋体：正文、标题、卡片
+  brush: ofl/mashanzheng/MaShanZheng-Regular.ttf  # 楷书：竖排题字、小标题
+
+seed: 7                          # 纸纹、墨色浓淡、印章磨损的随机种子；换个数字纹理就变
+
+# ── 横幅 assets/banner.svg ─────────────────────────────────────
+banner:
+  eyebrow: MASTER-NORNA          # 名号上方的英文小字
+  title: Nor.na                  # 大号名号；其中的「.」显示为朱砂点
+  subtitle: IMAGINATION · CREATION · ART
+  motto:                         # 右侧竖排题字，逐字书写、轮播；每句最多 4 字
+    - 新墨初研
+    - 一纸独明
+  colophon: 金陵·{year}{season}  # 落款。{year}=干支年 {season}=春夏秋冬 {month}=孟春…季冬；「·」显示为朱点
+  seal: N                        # 落款下的印章，1–4 字
+  seal_style: line               # line 言式细框（默认） / outline 粗框朱文 / solid 白文
+  timing:                        # 竖排题字的节奏（秒）
+    stroke: 0.4                  # 写一个字
+    pause: 0.12                  # 字与字之间提笔
+    column_pause: 0.35           # 换列
+    hold: 3.2                    # 写完停留
+    fade: 0.9                    # 淡出
+    gap: 0.6                     # 下一句落笔前，墨点闪烁等待
+    dry: 1.2                     # 湿墨渐干（略微变淡）
+
+# ── 小标题 assets/title-<id>-light.svg / -dark.svg ─────────────
+sections:
+  intro: { title: Introduction, note: "" }
+  works: { title: Opus, note: "" }
+  ink:   { title: Ink Traces, note: "" }
+
+# ── 自述正文 assets/intro-light.svg / -dark.svg（一项一行，每行别超过约 45 个汉字）──
+intro:
+  - Nor.na is thinking!
+  - Ideas take shape in different forms.
+
+# ── 作品 assets/card-<id>.svg ──────────────────────────────────
+# 增删改这里即可：构建时会重新生成卡片，并改写 README.md 里 works:start / works:end 之间的内容。
+# 作品数为奇数时自动补一张 empty_card。
+works:
+  - id: yan                      # 文件名用，英文/拼音
+    name: Yan
+    seal: Y                     # 印章文字 1–4 字，不写则取 name
+    seal_style: line             # line 言式细框（默认） / outline 粗框朱文 / solid 白文（朱底白字）
+    desc: A lightweight AI agent for contest teamwork and nonlinear learning.   # 最多两行，过长会截断
+    tags: [AGENT, OPEN SOURCE]
+    url: https://github.com/Master-Norna/yan   # 留空则卡片不加链接
+
+  - id: tianlai
+    name: Caelison
+    seal: C
+    seal_style: line
+    desc: An AI music workflow with editable scores.
+    tags: [MUSIC, OPEN SOURCE]
+    url: "https://github.com/Master-Norna/tianlai"                      # TODO 填仓库地址
+
+empty_card:
+  title: Awaiting
+  subtitle: The next seal goes here
+
+# ── 墨痕 assets/ink.svg ────────────────────────────────────────
+inktrace:
+  highlight: 2                   # 提交最多的几天画成朱砂点
+  labels: en                     # 时令标签：en（Autumn 2025）/ zh（乙巳秋）

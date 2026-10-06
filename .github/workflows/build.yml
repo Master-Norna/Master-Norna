@@ -1,0 +1,52 @@
+name: build
+
+on:
+  schedule:
+    - cron: "7 16 * * *"   # 每天北京时间 00:07
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - config.yml
+      - scripts/**
+      - .github/workflows/build.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: scripts/requirements.txt
+
+      - run: pip install -r scripts/requirements.txt
+
+      # 字体不入库：build.py 发现 fonts/ 里没有就从 google/fonts 下载
+      # GITHUB_TOKEN 用于读取「墨痕」的提交日历（GraphQL，只读公开数据）
+      - name: Build SVG
+        run: python scripts/build.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit if changed
+        run: |
+          git add -A assets README.md
+          if git diff --cached --quiet; then
+            echo "素材无变化，跳过提交"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: 更新主页素材"
+          git push
