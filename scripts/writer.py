@@ -61,8 +61,7 @@ def vertical(font, sentences, *, right, top, size, line_height, column_width, pe
              timing, rng, start=0.0, prefix="w"):
     """生成竖排轮播。right 为最右一列中线 x，top 为首字字格上沿 y。
 
-    返回 dict：css、defs（字形）、body（字 + 光标）、columns（最多几列）、first_done（首句写完的时刻，秒）、
-    total（总周期）、intervals（每句书写区间）。
+    返回 dict：css、defs（字形）、body（字 + 光标）、columns（最多几列）、first_done（首句写完的时刻，秒）。
     """
     columns = [layout(parse(s), per_column) for s in sentences]
 
@@ -182,6 +181,4 @@ def vertical(font, sentences, *, right, top, size, line_height, column_width, pe
             # 减弱动态效果时：只静态显示第一句，不显示光标
             f"@media (prefers-reduced-motion:reduce){{.w{{opacity:0!important}}.w0{{opacity:1!important}}}}")
     return {"css": base + "".join(css), "defs": "".join(glyph_defs), "body": "".join(body),
-            "columns": max(len(c) for c in columns), "first_done": start + schedule[0]["typed"],
-            # 每句的书写区间（落笔前的等待 → 最后一字写完），供印章同步呼吸、钤印
-            "total": T, "intervals": [(s["gap"], s["chars"][-1]["b"]) for s in schedule]}
+            "columns": max(len(c) for c in columns), "first_done": start + schedule[0]["typed"]}

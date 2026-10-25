@@ -1,22 +1,32 @@
 """纸、墨、印 —— 各组件共用的配色、滤镜与图形。
 
-风格：干净的米色纸 + 极淡的 feTurbulence 纸纹，不做旧；墨色有浓淡；印章边缘略有磨损。
+风格：干净的米色纸 + 极细的 feTurbulence 纸纹（不做旧、不加云纹，浅色主题下才不显脏）；墨色有浓淡；印章边缘略有磨损。
 滤镜一律 filterUnits="userSpaceOnUse"，纹理固定在画布上，动画时不会跟着元素「游动」。
 """
 import math
 
 from glyphs import num
 
-PAPER, PAPER_EMPTY = "#f3ecdc", "#ece4d1"
-EDGE, EDGE_EMPTY = "#d3c7ae", "#c9bca0"
-INK, INK_LIGHT = "#1f1d1a", "#4f4a44"   # 浓墨 / 淡墨
-MUTED = "#6b645a"                       # 纸上的灰字
-VERMILION = "#a8322a"                   # 朱砂
+# 配色取自「言」styles/00-base.css：纸 --paper / --paper-2，线 --line，墨 --ink / --ink-2 / --ink-3，朱 --accent
+# GRAIN 为纸纹颗粒 (r, g, b, 浓度, 偏移)：浅纸撒淡褐，暗纸撒极淡的白（同「言」暗色的 --grain）
+LIGHT = dict(PAPER="#fbfaf6", PAPER_EMPTY="#f3f0e8", EDGE="#ded8ca", EDGE_EMPTY="#d3ccbc",
+             INK="#292724", INK_LIGHT="#625e57", MUTED="#8a847a", VERMILION="#9b5540", GRAIN=(.45, .38, .27, .22, .08))
+DARK = dict(PAPER="#201f1c", PAPER_EMPTY="#282622", EDGE="#403c35", EDGE_EMPTY="#4a453d",
+            INK="#e8e3d8", INK_LIGHT="#b7b0a4", MUTED="#8f887e", VERMILION="#c47a5f", GRAIN=(1, 1, 1, .1, .04))
+PAPER = PAPER_EMPTY = EDGE = EDGE_EMPTY = INK = INK_LIGHT = MUTED = VERMILION = GRAIN = None
 
-# GitHub 浅色 / 深色主题下，透明背景组件（标题、自述）的配色
+
+def use(palette):
+    """切换纸墨配色：各组件运行时读 ink.PAPER 等，切过之后生成的就是这一套。"""
+    globals().update(palette)
+
+
+use(LIGHT)
+
+# GitHub 浅色 / 深色主题下，透明背景组件（标题、自述）的配色；深色取「言」的暗色主题
 THEMES = {
-    "light": {"text": "#1f2328", "muted": "#59636e", "line": "#d1d9e0", "seal": "#a8322a"},
-    "dark": {"text": "#e6e1d6", "muted": "#9198a1", "line": "#3d444d", "seal": "#d0503f"},
+    "light": {"text": "#292724", "muted": "#625e57", "line": "#ded8ca", "seal": "#9b5540"},
+    "dark": {"text": "#e8e3d8", "muted": "#b7b0a4", "line": "#403c35", "seal": "#c47a5f"},
 }
 
 BASE_CSS = """
@@ -45,15 +55,13 @@ def lerp_color(c0, c1, t):
 
 
 def grain(fid, x, y, w, h, seed):
-    """极淡的纸纹：细颗粒 + 大片若有若无的晕。返回 (defs, 覆盖层)。"""
+    """极淡的纸纹：只有细颗粒。返回 (defs, 覆盖层)。"""
     box = f'x="{num(x)}" y="{num(y)}" width="{num(w)}" height="{num(h)}"'
+    r, g, b, a, off = GRAIN
     defs = f"""<filter id="{fid}" filterUnits="userSpaceOnUse" {box} color-interpolation-filters="sRGB">
 <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="{seed}" result="n"/>
-<feColorMatrix in="n" type="matrix" values="0 0 0 0 .45  0 0 0 0 .38  0 0 0 0 .27  .32 0 0 0 -.11" result="dots"/>
-<feTurbulence type="fractalNoise" baseFrequency=".006 .01" numOctaves="3" seed="{seed + 2}" result="m"/>
-<feColorMatrix in="m" type="matrix" values="0 0 0 0 .6  0 0 0 0 .5  0 0 0 0 .35  .28 0 0 0 -.11" result="cloud"/>
-<feMerge result="tex"><feMergeNode in="cloud"/><feMergeNode in="dots"/></feMerge>
-<feComposite in="tex" in2="SourceGraphic" operator="in"/>
+<feColorMatrix in="n" type="matrix" values="0 0 0 0 {r}  0 0 0 0 {g}  0 0 0 0 {b}  {a} 0 0 0 -{off}" result="dots"/>
+<feComposite in="dots" in2="SourceGraphic" operator="in"/>
 </filter>"""
     return defs, f'<rect {box} fill="#000" filter="url(#{fid})"/>'
 

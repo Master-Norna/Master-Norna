@@ -2,12 +2,11 @@
 
 墨点像落在宣纸上一样慢慢洇开（不弹跳），从左往右、略带随机地浮现。
 """
-import json
 import random
-import urllib.request
 from datetime import date, timedelta
 
 import almanac
+import github
 import ink
 from glyphs import num
 
@@ -29,15 +28,8 @@ def fetch(login, token):
     """用 GraphQL 取过去一年的贡献日历，返回 [(date, count, level)]。"""
     query = ("query($login:String!){user(login:$login){contributionsCollection{contributionCalendar"
              "{weeks{contributionDays{date contributionCount contributionLevel}}}}}}")
-    req = urllib.request.Request(
-        "https://api.github.com/graphql",
-        data=json.dumps({"query": query, "variables": {"login": login}}).encode(),
-        headers={"Authorization": f"bearer {token}", "Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        data = json.load(r)
-    if data.get("errors"):
-        raise RuntimeError(data["errors"])
-    weeks = data["data"]["user"]["contributionsCollection"]["contributionCalendar"]["weeks"]
+    data = github.graphql(query, {"login": login}, token)
+    weeks = data["user"]["contributionsCollection"]["contributionCalendar"]["weeks"]
     return [(date.fromisoformat(d["date"]), d["contributionCount"], GQL_LEVEL[d["contributionLevel"]])
             for w in weeks for d in w["contributionDays"]]
 

@@ -78,8 +78,6 @@ def _card_frame(seed, fill, stroke, dashed=False):
     g_defs, g_rect = ink.grain("grain", 2, 2, CARD_W - 4, CARD_H - 4, seed)
     dash = ' stroke-dasharray="5 4"' if dashed else ""
     frame = f'<rect x="1" y="1" width="{CARD_W - 2}" height="{CARD_H - 2}" rx="3" fill="{fill}" stroke="{stroke}"{dash}/>{g_rect}'
-    if not dashed:
-        frame += f'<rect x="7" y="7" width="{CARD_W - 14}" height="{CARD_H - 14}" rx="2" fill="none" stroke="{stroke}" stroke-width=".6"/>'
     return g_defs, frame
 
 
@@ -87,20 +85,22 @@ def card(fonts, p, index, seed):
     """作品卡片：印章 + 名称 + 一句话介绍 + 标签。"""
     serif, serif_sb = fonts["serif"], fonts["serif_semibold"]
     g_defs, frame = _card_frame(seed + index, ink.PAPER, ink.EDGE)
-    # 印章：文字浮现时呼吸，写完钤印（同「言」）；各卡片错开一点
-    seal_css, seal = seals.animated(fonts["serif_medium"], p.get("seal") or p["name"][:4], 27, 27, 50,
-                                    style=p.get("seal_style", "line"), prefix="sc", total=3.4,
-                                    intervals=[(.1, 1.6)], delay=.15 * index, seed=seed + index)
+    # 印章：文字浮现后钤一次；各卡片错开一点
+    seal = seals.stamped(fonts["serif_medium"], p.get("seal") or p["name"][:4], 27, 27, 50,
+                         style=p.get("seal_style", "line"), prefix="sc", delay=1.2 + .15 * index, seed=seed + index)
     name = serif_sb.run(p["name"], 98.7, 56.5, 21, spacing=2.5)
-    desc_lines = wrap(serif, p.get("desc", ""), 14, CARD_W - 98.7 - 26)[:2]
+    desc_lines = wrap(serif, p.get("desc", ""), 14, CARD_W - 98.7 - 26)
+    if len(desc_lines) > 2:
+        print(f"注意：作品「{p['name']}」的 desc 超过两行，卡片上只显示到「{desc_lines[1]}」")
+        desc_lines = desc_lines[:2]
     top, pitch = (84, 20) if len(desc_lines) > 1 else (88, 22)  # 两行时整体上提，给标签留出空
     desc = "".join(serif.run(line, 98.7, top + pitch * i, 14).d for i, line in enumerate(desc_lines))
     tags = serif_sb.run(" · ".join(p.get("tags", [])), 98.5, 130.5, 11, spacing=2)
     body = (f"<defs>{g_defs}</defs>{frame}{seal}"
             f'<path class="a" style="animation:rise .8s .55s forwards" d="{name.d}" fill="{ink.INK}"/>'
-            f'<path class="a" style="animation:fade 1s .8s forwards" d="{desc}" fill="{ink.MUTED}"/>'
+            f'<path class="a" style="animation:fade 1s .8s forwards" d="{desc}" fill="{ink.INK_LIGHT}"/>'
             f'<path class="a" style="animation:fade 1s 1s forwards" d="{tags.d}" fill="{ink.VERMILION}"/>')
-    return ink.svg(CARD_W, CARD_H, body, seal_css, label=f'{p["name"]}: {p.get("desc", "")}')
+    return ink.svg(CARD_W, CARD_H, body, label=f'{p["name"]}: {p.get("desc", "")}')
 
 
 def empty_card(fonts, cfg, seed):

@@ -13,7 +13,7 @@ fonts:                           # 构建时从 github.com/google/fonts 下载�
 
 seed: 7                          # 纸纹、墨色浓淡、印章磨损的随机种子；换个数字纹理就变
 
-# ── 横幅 assets/banner.svg ─────────────────────────────────────
+# ── 横幅 assets/banner-light.svg / -dark.svg ───────────────────
 banner:
   eyebrow: MASTER-NORNA          # 名号上方的英文小字
   title: Nor.na                  # 大号名号；其中的「.」显示为朱砂点
@@ -37,6 +37,7 @@ banner:
 sections:
   intro: { title: Introduction, note: "" }
   works: { title: Opus, note: "" }
+  oss:   { title: Open Source, note: "" }
   ink:   { title: Ink Traces, note: "" }
 
 # ── 自述正文 assets/intro-light.svg / -dark.svg（一项一行，每行别超过约 45 个汉字）──
@@ -44,7 +45,7 @@ intro:
   - Nor.na is thinking!
   - Ideas take shape in different forms.
 
-# ── 作品 assets/card-<id>.svg ──────────────────────────────────
+# ── 作品 assets/card-<id>-light.svg / -dark.svg ────────────────
 # 增删改这里即可：构建时会重新生成卡片，并改写 README.md 里 works:start / works:end 之间的内容。
 # 作品数为奇数时自动补一张 empty_card。
 works:
@@ -62,13 +63,35 @@ works:
     seal_style: line
     desc: An AI music workflow with editable scores.
     tags: [MUSIC, OPEN SOURCE]
-    url: "https://github.com/Master-Norna/tianlai"                      # TODO 填仓库地址
+    url: "https://github.com/Master-Norna/tianlai"
+
+  - id: notes
+    name: Notes
+    seal: N
+    seal_style: line
+    desc: "Notes from real bugs: read the source, check the papers, reproduce it in code."
+    tags: [WRITING, RUST]
+    url: https://github.com/Master-Norna/notes
+
+  - id: fermat
+    name: Fermat in Lean
+    seal: F
+    seal_style: line
+    desc: A 35-hour autonomous Lean 4 run at FLT. The p ≥ 5 case still rests on two axioms.
+    tags: [LEAN 4, FORMAL PROOF]
+    url: https://github.com/Master-Norna/formal-proof-of-fermats-last-theorem
 
 empty_card:
   title: Awaiting
   subtitle: The next seal goes here
 
-# ── 墨痕 assets/ink.svg ────────────────────────────────────────
+# ── 开源 assets/opensource-*.svg、merged-*.svg ─────────────────
+# 只统计合并进别人仓库（不含自己名下）的 PR；下面列出合并最多的几个项目，再接一张最近合并的行迹。
+opensource:
+  rows: 6                        # 列几个项目（两列排，取偶数好看）
+  recent: 4                      # 行迹列几条最近合并的 PR
+
+# ── 墨痕 assets/ink-*.svg ──────────────────────────────────────
 inktrace:
   highlight: 2                   # 提交最多的几天画成朱砂点
   labels: en                     # 时令标签：en（Autumn 2025）/ zh（乙巳秋）
