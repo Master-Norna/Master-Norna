@@ -15,14 +15,16 @@ seed: 7                          # 纸纹、墨色浓淡、印章磨损的随机
 
 # ── 横幅 assets/banner-light.svg / -dark.svg ───────────────────
 banner:
-  eyebrow: MASTER-NORNA          # 名号上方的英文小字
-  title: Nor.na                  # 大号名号；其中的「.」显示为朱砂点
+  eyebrow: MASTER-NORNA          # 小印旁眉批的头一段
+  title: Nor.na                  # 大号名号；其中的「.」显示为朱点
   subtitle: IMAGINATION · CREATION · ART
+  tags: []                       # 名号下可再接一排提示字（淡朱丝栏相隔），留空则不画
+  season_mark: middle            # 当令的画（春柳、夏荷、秋苇、冬梅）：middle 名号与题字之间 / corner 右下角 / none 不画
   motto:                         # 右侧竖排题字，逐字书写、轮播；每句最多 4 字
     - 新墨初研
     - 一纸独明
-  colophon: 金陵·{year}{season}  # 落款。{year}=干支年 {season}=春夏秋冬 {month}=孟春…季冬；「·」显示为朱点
-  seal: N                        # 落款下的印章，1–4 字
+  colophon: 金陵·{year}·{term}   # 落款，接在眉批后。{year}=干支年 {term}=节气 {season}=春夏秋冬 {month}=孟春…季冬
+  seal: N                        # 眉批前的小印，1–4 字
   seal_style: line               # line 言式细框（默认） / outline 粗框朱文 / solid 白文
   timing:                        # 竖排题字的节奏（秒）
     stroke: 0.4                  # 写一个字
@@ -38,6 +40,7 @@ sections:
   intro: { title: Introduction, note: "" }
   works: { title: Opus, note: "" }
   oss:   { title: Open Source, note: "" }
+  lang:  { title: Languages, note: "" }
   ink:   { title: Ink Traces, note: "" }
 
 # ── 自述正文 assets/intro-light.svg / -dark.svg（一项一行，每行别超过约 45 个汉字）──
@@ -90,6 +93,11 @@ empty_card:
 opensource:
   rows: 6                        # 列几个项目（两列排，取偶数好看）
   recent: 4                      # 行迹列几条最近合并的 PR
+
+# ── 语言 assets/languages-*.svg ────────────────────────────────
+# 一个仓库只算主语言，按仓库数排：自己名下公开、非 fork 的（墨点）+ 合并过 PR 的项目（朱点）。
+languages:
+  rows: 6                        # 最多列几种语言
 
 # ── 墨痕 assets/ink-*.svg ──────────────────────────────────────
 inktrace:
