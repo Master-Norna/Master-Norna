@@ -11,7 +11,10 @@ import ink
 from glyphs import num
 
 W, H = 840, 190
-X0, Y0, STEP = 63, 36, 14
+PAD, Y0 = 44, 36          # 左右留白与其它板块同一条线
+R_MAX = 5.2               # 最浓的墨点 / 朱砂点的半径，也是留白的边界
+X0 = PAD + R_MAX          # 第一列的横坐标；列距按周数摊匀（见 build），两边正好对得上
+ROW_STEP = 14
 # GitHub 的 5 档活跃度 -> (半径, 浓度)
 LEVELS = [(1.5, .14), (2.6, .3), (3.4, .5), (4.2, .7), (4.9, .88)]
 GQL_LEVEL = {"NONE": 0, "FIRST_QUARTILE": 1, "SECOND_QUARTILE": 2, "THIRD_QUARTILE": 3, "FOURTH_QUARTILE": 4}
@@ -56,13 +59,15 @@ def build(fonts, days, seed, highlight=2, labels_lang="en"):
 
     dots, labels = [], []
     today = days[-1]
+    cols = (today[0] - start).days // 7 + 1
+    step = (W - 2 * PAD - 2 * R_MAX) / max(cols - 1, 1)  # 列距摊匀，点阵正好铺满左右留白之间
     last_label_col, last_season = -99, None
     for d, count, level in days:
         col, row = (d - start).days // 7, (d.weekday() + 1) % 7
-        cx, cy = X0 + col * STEP, Y0 + row * STEP
+        cx, cy = num(X0 + col * step), Y0 + row * ROW_STEP
         delay = .3 + col * .034 + row * .012 + rng.uniform(0, .15)
         if d in top:
-            dots.append(f'<circle class="d" style="animation-delay:{delay:.2f}s" cx="{cx}" cy="{cy}" r="5.2" fill="{ink.VERMILION}"/>')
+            dots.append(f'<circle class="d" style="animation-delay:{delay:.2f}s" cx="{cx}" cy="{cy}" r="{R_MAX}" fill="{ink.VERMILION}"/>')
         else:
             r, op = LEVELS[level]
             dots.append(f'<circle class="d" style="animation-delay:{delay:.2f}s" cx="{cx}" cy="{cy}" r="{r}" '
@@ -76,8 +81,11 @@ def build(fonts, days, seed, highlight=2, labels_lang="en"):
                 last_label_col, last_season = col, name
 
     texts = []
+    spacing = 1 if labels_lang == "en" else 2.5
     for i, (col, name) in enumerate(labels):
-        r = serif.run(name, X0 - 5 + col * STEP, 161, 12, spacing=2.5 if labels_lang != "en" else 1)
+        # 与第一列墨点齐头；最后一列的字会伸出内框，往左挪回，两边留白一样宽
+        x = min(X0 - R_MAX + col * step, W - PAD - serif.measure(name, 12, spacing))
+        r = serif.run(name, x, 161, 12, spacing=spacing)
         texts.append(f'<path class="a" style="animation:fade 1s {2.2 + .12 * i:.2f}s forwards" d="{r.d}" fill="{ink.MUTED}"/>')
 
     tcol, trow = (today[0] - start).days // 7, (today[0].weekday() + 1) % 7
@@ -90,7 +98,7 @@ def build(fonts, days, seed, highlight=2, labels_lang="en"):
             f'<feComponentTransfer in="blur" result="halo"><feFuncA type="linear" slope=".4"/></feComponentTransfer>'
             f'<feMerge><feMergeNode in="halo"/><feMergeNode in="rough"/></feMerge></filter></defs>'
             f'<g filter="url(#bleed)">{"".join(dots)}</g>'
-            f'<circle class="today" cx="{X0 + tcol * STEP}" cy="{Y0 + trow * STEP}" r="7.5" fill="none" '
+            f'<circle class="today" cx="{num(X0 + tcol * step)}" cy="{Y0 + trow * ROW_STEP}" r="7.5" fill="none" '
             f'stroke="{ink.VERMILION}" stroke-width="1" stroke-opacity=".6"/>{"".join(texts)}')
     total = sum(c for _, c, _ in days)
     return ink.svg(W, H, body, CSS, label=f"{total} contributions in the last year")

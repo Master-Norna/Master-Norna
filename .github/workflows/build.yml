@@ -2,7 +2,10 @@ name: build
 
 on:
   schedule:
-    - cron: "7 16 * * *"   # 每天北京时间 00:07
+    # GitHub 的定时任务常被排队，实测比排定时间晚四五个小时；一天排八次，
+    # 只要有一次跑成即可，素材没变就不会提交（见「Commit if changed」）。
+    # 时间按 UTC 写，北京时间 +8。
+    - cron: "23 */3 * * *"
   workflow_dispatch:
   push:
     branches: [main]
@@ -31,6 +34,12 @@ jobs:
           cache-dependency-path: scripts/requirements.txt
 
       - run: pip install -r scripts/requirements.txt
+
+      # 字体三十来兆，跑得比一天一次勤了，留一份给后面的运行用
+      - uses: actions/cache@v6
+        with:
+          path: fonts
+          key: fonts-${{ hashFiles('config.yml') }}
 
       # 字体不入库：build.py 发现 fonts/ 里没有就从 google/fonts 下载
       # GITHUB_TOKEN 用于读取「墨痕」的提交日历（GraphQL，只读公开数据）
