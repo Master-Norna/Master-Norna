@@ -39,7 +39,7 @@ banner:
 sections:
   intro: { title: Introduction, note: "" }
   works: { title: Opus, note: "" }
-  oss:   { title: Open Source, note: "" }
+  oss:   { title: Open Source, note: "last 12 months" }
   lang:  { title: Languages, note: "" }
   ink:   { title: Ink Traces, note: "" }
 
@@ -89,7 +89,8 @@ empty_card:
   subtitle: The next seal goes here
 
 # ── 开源 assets/opensource-*.svg、merged-*.svg ─────────────────
-# 只统计合并进别人仓库（不含自己名下）的 PR；下面列出合并最多的几个项目，再接一张最近合并的行迹。
+# 一块分两栏：左栏是别人的仓库（合并进去的 PR、项目数），右栏是自己的（近一年提交数、自己仓库里合并的 PR 数）。
+# 下面的项目列表只统计合并进别人仓库（不含自己名下）的；再接一张最近合并的行迹。
 opensource:
   rows: 6                        # 列几个项目（两列排，取偶数好看）
   recent: 4                      # 行迹列几条最近合并的 PR

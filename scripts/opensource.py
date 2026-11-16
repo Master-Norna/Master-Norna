@@ -1,7 +1,8 @@
-"""开源：合并进别人仓库的 PR（只算已合并的，还在审、关掉的不计）。
+"""开源：一块里分两栏 —— 别人的仓库、自己的仓库。
 
-build：上面两个数（已合并 / 项目），下面列出合并最多的几个项目，右侧一粒朱点一个 PR。
-trail：行迹 —— 最近合并的几条，细竖线串起朱点，标题一行、下面一行淡字「日期 仓库」。
+左栏：合并进别人仓库的 PR（只算已合并的，还在审、关掉的不计）与项目数；
+右栏：自己名下仓库近一年的提交数，和自己仓库里合并的 PR 数。
+下面列出合并最多的几个项目（朱点＝一个合并的 PR），再接一条最近合并的行迹。
 """
 from datetime import date, datetime
 
@@ -11,7 +12,9 @@ from glyphs import num
 
 W = 840
 X0, COL_W = 44, 364          # 左列起点、每列宽（两列间隔 24）
-ROW_TOP, ROW_PITCH = 150, 30
+X_MID = 410                  # 两栏之间的竖线
+X_OWN = 430                  # 右栏起点
+ROW_TOP, ROW_PITCH = 172, 30
 MAX_DOTS = 5                 # 每个项目最多画几粒朱点
 
 CSS = """
@@ -24,11 +27,12 @@ pageInfo{hasNextPage endCursor}
 nodes{...on PullRequest{title mergedAt repository{nameWithOwner stargazerCount isPrivate}}}}}"""
 
 
-def fetch(login, token):
-    """取合并进别人仓库（不含自己名下）的全部 PR，返回 [(仓库, 星数, 合并日期, 标题)]。"""
+def fetch(login, token, since):
+    """取 since 之后合并进别人仓库（不含自己名下）的 PR，返回 [(仓库, 星数, 合并日期, 标题)]。"""
     prs, after = [], None
     for _ in range(10):  # 最多 1000 条
-        data = github.graphql(QUERY, {"q": f"is:pr is:merged author:{login} -user:{login}", "after": after}, token)["search"]
+        q = f"is:pr is:merged author:{login} -user:{login} merged:>={since:%Y-%m-%d}"
+        data = github.graphql(QUERY, {"q": q, "after": after}, token)["search"]
         for n in data["nodes"]:
             repo = n.get("repository")
             if repo and not repo["isPrivate"] and n.get("mergedAt"):
@@ -40,12 +44,33 @@ def fetch(login, token):
     return prs
 
 
+OWN_QUERY = """query($login:String!,$q:String!){
+  user(login:$login){contributionsCollection{commitContributionsByRepository(maxRepositories:100){
+    repository{nameWithOwner owner{login}} contributions{totalCount}}}}
+  self:search(query:$q,type:ISSUE,first:1){issueCount}}"""
+
+
+def own(login, token, since):
+    """自己名下（since 之后）：提交数、有提交的仓库数、自己仓库里合并的 PR 数。"""
+    q = f"is:pr is:merged author:{login} user:{login} merged:>={since:%Y-%m-%d}"
+    d = github.graphql(OWN_QUERY, {"login": login, "q": q}, token)
+    mine = [r for r in d["user"]["contributionsCollection"]["commitContributionsByRepository"]
+            if r["repository"]["owner"]["login"].lower() == login.lower()]
+    return {"commits": sum(r["contributions"]["totalCount"] for r in mine),
+            "repos": len(mine), "prs": d["self"]["issueCount"]}
+
+
 def mock():
     """没有 token 时的示意数据（本地预览用）。"""
     sample = [("ink-lab/brush", 12800, 3), ("paper-co/fiber", 4200, 2), ("seal/stamp", 930, 2),
               ("scroll/mount", 2100, 1), ("inkstone/grind", 640, 1), ("ink-lab/wash", 310, 1)]
     repos = [(repo, stars) for repo, stars, n in sample for _ in range(n)]
     return [(repo, stars, date(2026, 10, 24 - i), f"fix: an example pull request #{i}") for i, (repo, stars) in enumerate(repos)]
+
+
+def mock_own():
+    """没有 token 时右栏的示意数据。"""
+    return {"commits": 1100, "repos": 10, "prs": 48}
 
 
 def stars_text(n):
@@ -61,7 +86,7 @@ def fit(font, text, size, width):
     return text + "…"
 
 
-def build(fonts, prs, rows=6):
+def build(fonts, prs, own, rows=6):
     serif, serif_sb = fonts["serif"], fonts["serif_semibold"]
     repos = {}
     for name, stars, *_ in prs:
@@ -71,24 +96,33 @@ def build(fonts, prs, rows=6):
     shown = ranked[:rows]
 
     parts = []
-    # ---- 两个数 ----
-    stats = [(len(prs), "MERGED PULL REQUESTS"), (len(repos), "PROJECTS")]
-    for i, (value, label) in enumerate(stats):
-        x = X0 + i * 220
-        v = fonts["serif_medium"].run(str(value), x, 72, 38)
-        lb = serif.run(label, x + 1, 96, 10.5, spacing=2.6)
-        parts.append(f'<g class="a" style="animation:rise .8s {num(.2 + .12 * i)}s forwards">'
-                     f'<path d="{v.d}" fill="{ink.VERMILION if i == 0 else ink.INK}"/>'
-                     f'<path d="{lb.d}" fill="{ink.MUTED}"/></g>')
+    # ---- 眉批：左「别人的仓库」，右「自己的仓库」，中间一道细线 ----
+    for i, text in enumerate(("IN OTHER REPOS", "IN MY OWN")):
+        e = serif.run(text, (X0, X_OWN)[i], 26, 9.5, spacing=2.4)
+        parts.append(f'<path class="a" style="animation:fade 1s {num(.3 + .06 * i)}s forwards" d="{e.d}" fill="{ink.MUTED}"/>')
+    parts.append(f'<rect class="a" style="animation:fade .8s .4s forwards" x="{X_MID}" y="46" width=".8" height="62" '
+                 f'fill="{ink.EDGE}"/>')
 
-    # 右上角图例：● = 一个合并的 PR（不列项目时没有点，也就不要图例）
-    if shown:
-        t = serif.run("one merged PR", W - X0, 96, 10.5, spacing=1.5, anchor="end")
-        parts.append(f'<g class="a" style="animation:fade 1s .6s forwards"><circle cx="{num(W - X0 - t.width - 9)}" cy="92.5" '
-                     f'r="3" fill="{ink.VERMILION}"/><path d="{t.d}" fill="{ink.MUTED}"/></g>')
+    # ---- 四个数：左栏 PR / 项目，右栏提交 / 自己仓库里合并的 PR ----
+    last_label = "MERGED PULL REQUESTS"
+    stats = [(str(len(prs)), last_label, X0, ink.VERMILION),
+             (str(len(repos)), "PROJECTS", X0 + 220, ink.INK),
+             (f"{own['commits']:,}", "COMMITS", X_OWN, ink.INK),
+             (f"{own['prs']}", last_label, W - X0 - serif.measure(last_label, 10.5, 2.6), ink.INK)]
+    for i, (value, label, x, color) in enumerate(stats):
+        v = fonts["serif_medium"].run(value, x, 76, 38)
+        lb = serif.run(label, x + 1, 100, 10.5, spacing=2.6)
+        parts.append(f'<g class="a" style="animation:rise .8s {num(.2 + .12 * i)}s forwards">'
+                     f'<path d="{v.d}" fill="{color}"/><path d="{lb.d}" fill="{ink.MUTED}"/></g>')
 
     parts.append(f'<rect class="a fx" style="transform-origin:left;animation:growx 1s .5s forwards,fade .1s .5s forwards" '
-                 f'x="{X0}" y="118" width="{W - 2 * X0}" height=".8" fill="{ink.EDGE}"/>')
+                 f'x="{X0}" y="124" width="{W - 2 * X0}" height=".8" fill="{ink.EDGE}"/>')
+
+    # 图例：● = 一个合并的 PR（不列项目时没有点，也就不要图例）
+    if shown:
+        t = serif.run("one merged PR", W - X0, 148, 10.5, spacing=1.5, anchor="end")
+        parts.append(f'<g class="a" style="animation:fade 1s .6s forwards"><circle cx="{num(W - X0 - t.width - 9)}" cy="144.5" '
+                     f'r="3" fill="{ink.VERMILION}"/><path d="{t.d}" fill="{ink.MUTED}"/></g>')
 
     # ---- 项目列表：两列，按行交错浮现 ----
     for k, (name, r) in enumerate(shown):
@@ -116,7 +150,9 @@ def build(fonts, prs, rows=6):
 
     h = ROW_TOP + (len(shown) + 1) // 2 * ROW_PITCH + 6
     return ink.svg(W, h, _paper(h, parts), CSS,
-                   label=f"{len(prs)} pull requests merged into {len(repos)} open source projects")
+                   label=(f"{len(prs)} pull requests merged into {len(repos)} open source projects; "
+                          f"{own['commits']:,} commits across {own['repos']} repositories of my own, "
+                          f"where {own['prs']} pull requests were merged"))
 
 
 def trail(fonts, prs, rows=4):

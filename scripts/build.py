@@ -161,19 +161,23 @@ def main():
         it = cfg.get("inktrace", {})
         write_themed("ink", lambda: inktrace.build(fonts, days, seed, it.get("highlight", 2), it.get("labels", "en")))
 
-    prs = None
+    prs, own = None, None
     if token:
         try:
-            prs = opensource.fetch(login, token)
+            since = day - timedelta(days=365)
+            prs = opensource.fetch(login, token, since)
+            own = opensource.own(login, token, since)
         except Exception as e:
             print(f"取 PR 记录失败，保留现有 assets/opensource-*.svg、merged-*.svg：{e}")
+            prs = own = None
             keep_themed("opensource")
             keep_themed("merged")
     else:
         prs = opensource.mock()
+        own = opensource.mock_own()
     if prs is not None:
         oc = cfg.get("opensource", {})
-        write_themed("opensource", lambda: opensource.build(fonts, prs, oc.get("rows", 6)))
+        write_themed("opensource", lambda: opensource.build(fonts, prs, own, oc.get("rows", 6)))
         write_themed("merged", lambda: opensource.trail(fonts, prs, oc.get("recent", 4)))
 
     langs = None
